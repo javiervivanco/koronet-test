@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: koronet-config
+  namespace: ""
+data:
+  REDIS_HOST: "koronet-redis"
+  REDIS_PORT: "6379"
+  DATABASE: "koronet_db"

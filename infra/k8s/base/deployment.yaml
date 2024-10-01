@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: REPLACE
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: koronet
+  template:
+    metadata:
+      labels:
+        app: koronet
+    spec:
+      containers:
+      - name: koronet
+        image: koronet:latest
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        envFrom:
+        - configMapRef:
+            name: koronet-config

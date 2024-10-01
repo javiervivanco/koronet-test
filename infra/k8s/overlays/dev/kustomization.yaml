@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+namespace: dev
+patches:
+  - target:
+      kind: Ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: webserver.dev.koronet
+configMapGenerator:
+- name: koronet-config
+  behavior: merge
+  literals:
+  - ENVIRONMENT=dev
+  - DATABASE=koronet_dev_db
