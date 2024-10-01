@@ -1,0 +1,23 @@
+@startuml
+package "Kubernetes Cluster" {
+    package "Application Pods" {
+        [Web Server] as A
+        [Redis] as B
+    }
+    [Node Exporter] as C
+    [Redis Exporter] as D
+    [Prometheus] as E
+    [Grafana] as F
+}
+[Alert Manager] as G
+[DevOps Team] as H
+
+A --> E : Exposes metrics
+B --> D : Metrics
+C --> E : Node metrics
+D --> E : Redis metrics
+E --> F : Metrics
+E --> G : Alerts
+F --> H : Dashboards
+G --> H : Notifications
+@enduml
