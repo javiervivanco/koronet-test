@@ -1,0 +1,75 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        IMAGE_NAME = "koronet-webserver"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_BUILDER_IMAGE = "python:3.9-alpine"
+    }
+    parameters {
+        choice(name: 'NAMESPACE', choices: ['dev', 'stg', 'prod'], description: 'Kubernetes namespace to deploy to')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Run Tests') {
+            steps {
+                script {
+                    //Run tests inside `DOCKER_BUILDER_IMAGE` because the production image is optimized and not include necessary testing tools.
+                    def workspace = pwd()
+                    docker.image("${DOCKER_BUILDER_IMAGE}").inside("-v ${workspace}:/data -w /data") {
+                        sh 'pip install pytest'
+                        sh 'pytest test/*'
+                    }
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub') {
+                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push()
+                        docker.image("${IMAGE_NAME}:${IMAGE_TAG}").push("latest")
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    // 1. Created a custom manifest with Kustomize for the namespace. kubectl kustomize  infra/k8s/overlays ...
+                    // 2. Changed the deployment image by setting the IMAGE_TAG, enabling easy rollback. sed /...
+                    // 3. The custom manifest creates the resources in the cluster- ... | kubectl apply -f -
+
+                    sh """
+                    kubectl kustomize  infra/k8s/overlays/${params.NAMESPACE} |sed "s/BUILD_NUMBER_PLACEHOLDER/${IMAGE_TAG}/" kubectl apply -f -
+                    kubectl -n ${params.NAMESPACE}  rollout status deployment/koronet-webserver
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clear docker image for free disk
+            sh "docker rmi ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+    }
+}

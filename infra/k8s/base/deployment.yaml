@@ -7,15 +7,15 @@ spec:
   replicas: 3
   selector:
     matchLabels:
-      app: koronet
+      app: koronet-webserver
   template:
     metadata:
       labels:
-        app: koronet
+        app: koronet-webserver
     spec:
       containers:
-      - name: koronet
-        image: koronet:latest
+      - name: koronet-webserver
+        image: koronet-webserver:BUILD_NUMBER_PLACEHOLDER
         ports:
         - containerPort: 8080
         resources:
