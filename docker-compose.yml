@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  webserver:
+    build:
+      context: webserver
+      tags:
+        - koronet-test:webserver
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://user:password@db/koronet_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - db
+      - redis
+    networks:
+      - koronet
+
+  db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=koronet_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - koronet
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:6
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - koronet
+
+networks:
+  koronet:
+    name: koronet
+
+volumes:
+  postgres_data:
+  redis_data:
